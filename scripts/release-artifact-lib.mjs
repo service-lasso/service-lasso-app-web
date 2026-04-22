@@ -1,5 +1,6 @@
 import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 
@@ -231,6 +232,31 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function reserveLoopbackPort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        server.close(() => reject(new Error("failed to reserve loopback port")));
+        return;
+      }
+
+      const { port } = address;
+      server.close((closeError) => {
+        if (closeError) {
+          reject(closeError);
+          return;
+        }
+
+        resolve(String(port));
+      });
+    });
+  });
+}
+
 async function waitForJson(url, timeoutMs = 15000) {
   const startedAt = Date.now();
   let lastError = null;
@@ -385,11 +411,13 @@ export async function verifyStagedArtifact({ repoRoot, artifactRoot, archivePath
   const packageJson = await readRootPackageJson(repoRoot);
   const expectedNeedle = packageJson.name.split("/").at(-1);
   const fixtures = await createVerificationSiblingFixtures(stagedRoot);
+  const hostPort = await reserveLoopbackPort();
+  const runtimePort = await reserveLoopbackPort();
   await installStarterDependencies(stagedRoot, repoRoot);
   const result = await smokeStarterHost(stagedRoot, {
     ...process.env,
-    SERVICE_LASSO_APP_WEB_PORT: "19120",
-    SERVICE_LASSO_API_PORT: "18192",
+    SERVICE_LASSO_APP_WEB_PORT: hostPort,
+    SERVICE_LASSO_API_PORT: runtimePort,
     SERVICE_LASSO_APP_WEB_ADMIN_DIST_ROOT: fixtures.adminDistRoot,
     SERVICE_LASSO_APP_WEB_ECHO_SERVICE_ROOT: fixtures.echoServiceRoot,
     SERVICE_LASSO_SERVICES_ROOT: fixtures.servicesRoot,
