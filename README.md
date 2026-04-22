@@ -19,7 +19,8 @@ Current implementation:
 - published `@service-lasso/service-lasso` runtime package consumption
 - host-owned landing shell at `/`
 - embedded sibling `lasso-@serviceadmin` build at `/admin/`
-- prepared local `servicesRoot` wrapper for sibling `lasso-echoservice`
+- tracked repo-owned `services/` definitions for Echo Service and Service Admin
+- prepared local `servicesRoot` copied from tracked service manifests plus a generated Echo Service runner
 
 Current local start command:
 - `npm start`
