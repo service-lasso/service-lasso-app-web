@@ -37,3 +37,28 @@ test("starter release artifact can be staged and verified", async () => {
     await rm(outputRoot, { recursive: true, force: true });
   }
 });
+
+test("starter release artifact respects SERVICE_LASSO_RELEASE_VERSION when provided", async () => {
+  const outputRoot = await createTemporaryOutputRoot();
+  const previousVersion = process.env.SERVICE_LASSO_RELEASE_VERSION;
+  process.env.SERVICE_LASSO_RELEASE_VERSION = "2026.4.23-abcdef1";
+
+  try {
+    const packageJson = await readRootPackageJson(repoRoot);
+    const packageSuffix = packageJson.name.split("/").at(-1);
+    const staged = await stageReleaseArtifact({
+      repoRoot,
+      outputRoot,
+    });
+
+    assert.equal(staged.artifactName, `${packageSuffix}-2026.4.23-abcdef1`);
+  } finally {
+    if (previousVersion === undefined) {
+      delete process.env.SERVICE_LASSO_RELEASE_VERSION;
+    } else {
+      process.env.SERVICE_LASSO_RELEASE_VERSION = previousVersion;
+    }
+
+    await rm(outputRoot, { recursive: true, force: true });
+  }
+});

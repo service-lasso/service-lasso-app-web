@@ -24,6 +24,10 @@ export async function readRootPackageJson(repoRoot) {
 }
 
 export async function getReleaseVersion(repoRoot) {
+  if (process.env.SERVICE_LASSO_RELEASE_VERSION) {
+    return process.env.SERVICE_LASSO_RELEASE_VERSION;
+  }
+
   const packageJson = await readRootPackageJson(repoRoot);
   return packageJson.version;
 }

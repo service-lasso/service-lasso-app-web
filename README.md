@@ -44,8 +44,8 @@ Current pipelines:
   - runs on pushes to `main` and on pull requests
   - installs dependencies and runs `npm test`
 - `Release`
-  - runs on pushes to `main`, version tags, or by manual dispatch
-  - runs tests, verifies the artifact, uploads the packaged files, and creates or updates the rolling `latest` release on `main`
+  - runs on pushes to `main` or by manual dispatch
+  - runs tests, verifies the artifact, uploads the packaged files, and creates a timestamped `yyyy.m.d-<shortsha>` release from `main`
 
 Current shipped artifact contents are documented in:
 - `docs/release-artifact.md`
