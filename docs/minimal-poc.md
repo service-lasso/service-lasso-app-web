@@ -60,6 +60,14 @@ The POC should:
 - documented host-owned output or shell framing
 - one short smoke checklist proving the flow works
 
+## Current status
+
+This bounded POC is now implemented in-repo:
+- `npm start` boots the published `@service-lasso/service-lasso` runtime
+- the host serves its own browser shell at `/`
+- the host embeds the sibling built `lasso-@serviceadmin` app at `/admin/`
+- the host prepares a local wrapper `servicesRoot` so `lasso-echoservice` is the discovered service under test
+
 ## Honest scope limit
 
 This POC does not need:
