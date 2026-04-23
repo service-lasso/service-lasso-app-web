@@ -104,7 +104,9 @@ The release now proves:
 ## Private package note
 
 This starter depends on the published private core package:
-- `@service-lasso/service-lasso`
+- `@service-lasso/service-lasso@latest`
+
+The `latest` dist-tag is intentional so starter artifacts consume the current manifest-owned install/acquire behavior published by the core repo.
 
 For local or CI installs from GitHub Packages, provide a token with package read access through:
 - `NODE_AUTH_TOKEN`
