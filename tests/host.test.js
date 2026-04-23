@@ -11,24 +11,24 @@ async function createFixtureRoots() {
   const root = await mkdtemp(path.join(tmpdir(), "service-lasso-app-web-"));
   const siblingRoot = path.join(root, "siblings");
   const adminDistRoot = path.join(siblingRoot, "lasso-@serviceadmin", "dist");
-  const echoServiceRepoRoot = path.join(siblingRoot, "lasso-echoservice");
   const sourceServicesRoot = path.join(root, "service-lasso-app-web", "services");
 
   await mkdir(adminDistRoot, { recursive: true });
-  await mkdir(echoServiceRepoRoot, { recursive: true });
   await mkdir(path.join(sourceServicesRoot, "echo-service"), { recursive: true });
   await mkdir(path.join(sourceServicesRoot, "service-admin"), { recursive: true });
   await writeFile(path.join(adminDistRoot, "index.html"), "<!doctype html><title>admin</title>", "utf8");
   await writeFile(path.join(adminDistRoot, "asset.js"), "console.log('admin asset');", "utf8");
-  await writeFile(path.join(echoServiceRepoRoot, "service.json"), "{\n  \"id\": \"echo-service\"\n}\n", "utf8");
-  await writeFile(path.join(sourceServicesRoot, "echo-service", "service.json"), "{\n  \"id\": \"echo-service\"\n}\n", "utf8");
+  await writeFile(
+    path.join(sourceServicesRoot, "echo-service", "service.json"),
+    "{\n  \"id\": \"echo-service\",\n  \"artifact\": {\n    \"kind\": \"archive\"\n  }\n}\n",
+    "utf8",
+  );
   await writeFile(path.join(sourceServicesRoot, "service-admin", "service.json"), "{\n  \"id\": \"service-admin\"\n}\n", "utf8");
 
   return {
     root,
     siblingRoot,
     adminDistRoot,
-    echoServiceRepoRoot,
     sourceServicesRoot,
   };
 }
@@ -48,7 +48,6 @@ test("web config resolves deterministic sibling repo paths", async () => {
     assert.equal(config.runtimeUrl, "http://127.0.0.1:18192");
     assert.equal(config.adminDistRoot, fixture.adminDistRoot);
     assert.equal(config.sourceServicesRoot, fixture.sourceServicesRoot);
-    assert.equal(config.echoServiceRepoRoot, fixture.echoServiceRepoRoot);
 
     await assert.doesNotReject(() => validateWebConfig(config));
   } finally {
@@ -71,7 +70,6 @@ test("web host serves shell, host status, and mounted admin assets", async () =>
     const status = createHostStatus(config);
     assert.equal(status.app, "@service-lasso/service-lasso-app-web");
     assert.equal(status.sourceServicesRoot, fixture.sourceServicesRoot);
-    assert.equal(status.echoServiceRepoRoot, fixture.echoServiceRepoRoot);
 
     const server = createWebHostServer(config);
     server.listen(0, "127.0.0.1");

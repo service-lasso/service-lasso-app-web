@@ -20,7 +20,8 @@ Current implementation:
 - host-owned landing shell at `/`
 - embedded sibling `lasso-@serviceadmin` build at `/admin/`
 - tracked repo-owned `services/` definitions for Echo Service and Service Admin
-- prepared local `servicesRoot` copied from tracked service manifests plus a generated Echo Service runner
+- manifest-owned Echo Service archive metadata under `services/echo-service/service.json`
+- prepared local `servicesRoot` copied from the tracked service inventory before runtime startup
 
 Current local start command:
 - `npm start`
@@ -32,7 +33,7 @@ Current local URLs:
 
 ## Current release artifact
 
-This starter repo now has a bounded template-source release artifact.
+This starter repo now has bounded source, bootstrap-download, and preloaded/no-download release artifacts.
 
 Current local commands:
 - `npm test`
@@ -45,13 +46,13 @@ Current pipelines:
   - installs dependencies and runs `npm test`
 - `Release`
   - runs on pushes to `main` or by manual dispatch
-  - runs tests, verifies the artifact, uploads the packaged files, and creates a timestamped `yyyy.m.d-<shortsha>` release from `main`
+  - runs tests, verifies the artifacts, uploads the packaged files, and creates a timestamped `yyyy.m.d-<shortsha>` release from `main`
 
 Current shipped artifact contents are documented in:
 - `docs/release-artifact.md`
 
 Current honest label:
-- this repo ships a runnable browser-first host starter plus a starter-template source bundle
+- this repo ships a runnable browser-first app-host starter plus explicit source, bootstrap-download, and preloaded runtime bundles
 
 ## Minimal POC
 

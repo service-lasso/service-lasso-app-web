@@ -5,18 +5,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { prepareStarterServicesRoot } from "../src/services-root.js";
 
-test("web starter servicesRoot is prepared with an echo-service wrapper manifest", async () => {
+test("web starter servicesRoot is prepared from tracked service manifests without a generated wrapper", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "service-lasso-app-web-services-"));
-  const echoServiceRepoRoot = path.join(root, "lasso-echoservice");
   const sourceServicesRoot = path.join(root, "services-template");
   const servicesRoot = path.join(root, ".workspace", "services");
 
   try {
-    await mkdir(echoServiceRepoRoot, { recursive: true });
     await mkdir(path.join(sourceServicesRoot, "echo-service"), { recursive: true });
     await mkdir(path.join(sourceServicesRoot, "service-admin"), { recursive: true });
     await writeFile(
-      path.join(echoServiceRepoRoot, "service.json"),
+      path.join(sourceServicesRoot, "echo-service", "service.json"),
       `${JSON.stringify(
         {
           id: "echo-service",
@@ -24,28 +22,23 @@ test("web starter servicesRoot is prepared with an echo-service wrapper manifest
           description: "Harness",
           version: "0.0.0",
           enabled: true,
-          executable: "go",
-          args: ["run", "."],
-          healthcheck: {
-            type: "process",
+          artifact: {
+            kind: "archive",
+            source: {
+              type: "github-release",
+              repo: "service-lasso/lasso-echoservice",
+              tag: "fixture",
+            },
+            platforms: {
+              [process.platform]: {
+                assetName: "echo-service.zip",
+                assetUrl: "http://127.0.0.1:9999/echo-service.zip",
+                archiveType: process.platform === "win32" ? "zip" : "tar.gz",
+                command: process.platform === "win32" ? "./echo-service.exe" : "./echo-service",
+                args: [],
+              },
+            },
           },
-        },
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
-    await writeFile(
-      path.join(sourceServicesRoot, "echo-service", "service.json"),
-      `${JSON.stringify(
-        {
-          id: "echo-service",
-          name: "Echo Service",
-          description: "Tracked service definition",
-          version: "0.0.0",
-          enabled: true,
-          executable: "node",
-          args: ["./run-echo-service.mjs"],
           healthcheck: {
             type: "process",
           },
@@ -63,21 +56,17 @@ test("web starter servicesRoot is prepared with an echo-service wrapper manifest
 
     const prepared = await prepareStarterServicesRoot({
       sourceServicesRoot,
-      echoServiceRepoRoot,
       servicesRoot,
     });
 
     assert.equal(prepared.echoServiceRoot, path.join(servicesRoot, "echo-service"));
     assert.equal(prepared.serviceAdminRoot, path.join(servicesRoot, "service-admin"));
-    const wrapperManifest = JSON.parse(await readFile(path.join(servicesRoot, "echo-service", "service.json"), "utf8"));
-    assert.equal(wrapperManifest.id, "echo-service");
-    assert.equal(wrapperManifest.executable, "node");
-    assert.deepEqual(wrapperManifest.args, ["./run-echo-service.mjs"]);
+    const manifest = JSON.parse(await readFile(path.join(servicesRoot, "echo-service", "service.json"), "utf8"));
+    assert.equal(manifest.id, "echo-service");
+    assert.equal(manifest.artifact.source.repo, "service-lasso/lasso-echoservice");
+    assert.equal(prepared.echoServiceManifestPath, path.join(servicesRoot, "echo-service", "service.json"));
     const adminManifest = JSON.parse(await readFile(path.join(servicesRoot, "service-admin", "service.json"), "utf8"));
     assert.equal(adminManifest.id, "service-admin");
-    const wrapperEntrypoint = await readFile(prepared.wrapperEntrypointPath, "utf8");
-    assert.match(wrapperEntrypoint, /spawn\("go", \["run", "\."\]/);
-    assert.match(wrapperEntrypoint, new RegExp(JSON.stringify(echoServiceRepoRoot).slice(1, -1).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
