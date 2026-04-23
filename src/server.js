@@ -164,7 +164,7 @@ function createShellHtml(config) {
         <span class="eyebrow">App Web Host</span>
         <h1>Browser-first shell for Service Lasso</h1>
         <p>
-          This starter owns the outer web shell, embeds Service Admin, and points the runtime at a prepared Echo Service wrapper.
+          This starter owns the outer web shell, embeds Service Admin, and points the runtime at a tracked service inventory with manifest-owned Echo Service archive metadata.
         </p>
         <div class="card">
           <span class="label">Runtime API</span>
@@ -231,13 +231,12 @@ export function createHostStatus(config) {
     servicesRoot: config.servicesRoot,
     sourceServicesRoot: config.sourceServicesRoot,
     workspaceRoot: config.workspaceRoot,
-    echoServiceRepoRoot: config.echoServiceRepoRoot,
     adminDistRoot: config.adminDistRoot,
     notes: [
       "Host-owned web shell is served at /.",
       "Service Admin is mounted from the sibling build under /admin/.",
       "Tracked services/ definitions are copied into the prepared servicesRoot before runtime startup.",
-      "A local Echo Service runner is generated into the prepared servicesRoot.",
+      "Echo Service archive metadata now lives in services/echo-service/service.json.",
     ],
   };
 }

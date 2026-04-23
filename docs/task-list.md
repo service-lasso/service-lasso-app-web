@@ -27,7 +27,7 @@ Turn the starter into the smallest real browser-first host that:
 5. Mount the built Service Admin app from the sibling repo
    status: done
 
-6. Prepare a local wrapper `servicesRoot` for Echo Service
+6. Prepare a local `servicesRoot` from the tracked service inventory
    status: done
 
 7. Add direct tests for config resolution, host routes, and wrapper materialization
