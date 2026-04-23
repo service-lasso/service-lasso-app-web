@@ -99,6 +99,79 @@ function createShellHtml(config) {
         border: 1px solid var(--line);
         background: rgba(255,255,255,0.55);
       }
+      .service-widget {
+        display: grid;
+        gap: 12px;
+      }
+      .service-widget__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .service-widget__header p {
+        margin: 4px 0 0;
+      }
+      .service-widget__refresh {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #fff8ee;
+        color: var(--ink);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+      }
+      .service-widget__status {
+        margin: 0;
+        color: var(--muted);
+      }
+      .service-list {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .service-row {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.68);
+      }
+      .service-row__top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .service-row__name {
+        font-weight: 800;
+      }
+      .service-row__id,
+      .service-row__detail {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .pill {
+        border-radius: 999px;
+        padding: 4px 8px;
+        background: rgba(22,36,39,0.08);
+        color: var(--ink);
+        font-size: 0.78rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+      .pill--healthy {
+        background: rgba(68, 128, 82, 0.16);
+        color: #2f6f3e;
+      }
+      .pill--unhealthy {
+        background: rgba(203, 95, 42, 0.16);
+        color: var(--accent);
+      }
       .label {
         display: block;
         font-size: 0.76rem;
@@ -178,6 +251,17 @@ function createShellHtml(config) {
           <span class="label">Workspace root</span>
           <code>${config.workspaceRoot}</code>
         </div>
+        <div class="card service-widget" data-service-widget>
+          <div class="service-widget__header">
+            <div>
+              <span class="label">Host-owned service widget</span>
+              <p>Reads the Service Lasso runtime API directly while keeping Service Admin separate.</p>
+            </div>
+            <button class="service-widget__refresh" type="button" data-service-refresh>Refresh</button>
+          </div>
+          <p class="service-widget__status" data-service-status>Loading runtime services...</p>
+          <ul class="service-list" data-service-list aria-live="polite"></ul>
+        </div>
         <div class="links">
           <a class="link" href="/api/host-status">
             <strong>Host status JSON</strong>
@@ -197,6 +281,85 @@ function createShellHtml(config) {
         <iframe title="Service Admin" src="/admin/"></iframe>
       </section>
     </main>
+    <script>
+      const statusElement = document.querySelector("[data-service-status]");
+      const listElement = document.querySelector("[data-service-list]");
+      const refreshButton = document.querySelector("[data-service-refresh]");
+
+      function lifecycleLabel(service) {
+        const lifecycle = service.lifecycle ?? {};
+        if (lifecycle.running) return "running";
+        if (lifecycle.configured) return "configured";
+        if (lifecycle.installed) return "installed";
+        return "discovered";
+      }
+
+      function healthLabel(service) {
+        if (!service.health) return "health unknown";
+        return service.health.healthy ? "healthy" : "needs attention";
+      }
+
+      function renderServices(services) {
+        listElement.replaceChildren();
+
+        if (services.length === 0) {
+          statusElement.textContent = "No services were discovered by the runtime.";
+          return;
+        }
+
+        statusElement.textContent = services.length === 1
+          ? "1 service discovered from the runtime API."
+          : services.length + " services discovered from the runtime API.";
+
+        for (const service of services) {
+          const row = document.createElement("li");
+          row.className = "service-row";
+
+          const health = healthLabel(service);
+          row.innerHTML = [
+            '<div class="service-row__top">',
+            '<div>',
+            '<div class="service-row__name"></div>',
+            '<div class="service-row__id"></div>',
+            '</div>',
+            '<span class="pill"></span>',
+            '</div>',
+            '<div class="service-row__detail"></div>',
+          ].join("");
+
+          row.querySelector(".service-row__name").textContent = service.name ?? service.id;
+          row.querySelector(".service-row__id").textContent = service.id;
+          row.querySelector(".pill").textContent = lifecycleLabel(service);
+          row.querySelector(".service-row__detail").textContent = health + " - " + (service.health?.detail ?? "No healthcheck has reported yet.");
+          row.querySelector(".service-row__detail").classList.toggle("pill--healthy", service.health?.healthy === true);
+          row.querySelector(".service-row__detail").classList.toggle("pill--unhealthy", service.health?.healthy === false);
+          listElement.append(row);
+        }
+      }
+
+      async function loadServices() {
+        statusElement.textContent = "Loading runtime services...";
+        refreshButton.disabled = true;
+
+        try {
+          const response = await fetch("/api/runtime-services");
+          if (!response.ok) {
+            throw new Error("Runtime services request failed with HTTP " + response.status);
+          }
+
+          const payload = await response.json();
+          renderServices(Array.isArray(payload.services) ? payload.services : []);
+        } catch (error) {
+          statusElement.textContent = "Unable to load runtime services: " + (error?.message ?? error);
+          listElement.replaceChildren();
+        } finally {
+          refreshButton.disabled = false;
+        }
+      }
+
+      refreshButton.addEventListener("click", loadServices);
+      loadServices();
+    </script>
   </body>
 </html>`;
 }
@@ -241,6 +404,34 @@ export function createHostStatus(config) {
   };
 }
 
+async function fetchRuntimeServices(config) {
+  const response = await fetch(`${config.runtimeUrl}/api/services`);
+  const body = await response.text();
+  let payload = null;
+
+  try {
+    payload = body ? JSON.parse(body) : null;
+  } catch {
+    payload = { raw: body };
+  }
+
+  if (!response.ok) {
+    return {
+      statusCode: response.status,
+      body: {
+        error: "runtime_services_unavailable",
+        message: `Runtime services API returned HTTP ${response.status}.`,
+        upstream: payload,
+      },
+    };
+  }
+
+  return {
+    statusCode: 200,
+    body: payload,
+  };
+}
+
 export function createWebHostServer(config) {
   const shellHtml = createShellHtml(config);
   const statusBody = createHostStatus(config);
@@ -257,6 +448,12 @@ export function createWebHostServer(config) {
 
     if (request.method === "GET" && url.pathname === "/api/host-status") {
       writeJson(response, 200, statusBody);
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/runtime-services") {
+      const result = await fetchRuntimeServices(config);
+      writeJson(response, result.statusCode, result.body);
       return;
     }
 

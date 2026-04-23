@@ -18,6 +18,7 @@ The POC should:
 - point that runtime at a `servicesRoot` containing Echo Service
 - show a host-owned landing or shell view first
 - point the browser app at the runtime API
+- render a host-owned services widget that fetches Service Lasso runtime data
 - surface `lasso-@serviceadmin` inside the web app host
 - show Echo Service in the admin UI and allow at least:
   - services list
@@ -45,11 +46,12 @@ The POC should:
 1. Start the runtime host for the web app.
 2. Open the browser app.
 3. See host-owned output from the web shell before or alongside the admin surface.
-4. See the embedded or proxied Service Admin UI.
-5. See Echo Service listed in services.
-6. Open Echo Service detail.
-7. Start/stop Echo Service from the UI.
-8. View logs and health for Echo Service.
+4. See the host-owned service widget list services from the runtime API.
+5. See the embedded or proxied Service Admin UI.
+6. See Echo Service listed in services.
+7. Open Echo Service detail.
+8. Start/stop Echo Service from the UI.
+9. View logs and health for Echo Service.
 
 ## POC deliverables
 
@@ -65,6 +67,7 @@ The POC should:
 This bounded POC is now implemented in-repo:
 - `npm start` boots the published `@service-lasso/service-lasso` runtime
 - the host serves its own browser shell at `/`
+- the host shell includes a bounded services widget backed by `/api/runtime-services`
 - the host embeds the sibling built `lasso-@serviceadmin` app at `/admin/`
 - the host prepares a local `servicesRoot` from the tracked repo `services/` inventory so `echo-service` is discovered from manifest-owned archive metadata
 
@@ -78,4 +81,4 @@ This POC does not need:
 
 It only needs to prove:
 
-**a web host can present Service Admin against a real Service Lasso runtime managing Echo Service**
+**a web host can present host-owned runtime API output plus Service Admin against a real Service Lasso runtime managing Echo Service**

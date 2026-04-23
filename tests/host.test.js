@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { once } from "node:events";
+import { createServer } from "node:http";
 import { resolveWebConfig, validateWebConfig } from "../src/config.js";
 import { createHostStatus, createWebHostServer } from "../src/server.js";
 
@@ -30,6 +31,33 @@ async function createFixtureRoots() {
     siblingRoot,
     adminDistRoot,
     sourceServicesRoot,
+  };
+}
+
+async function startRuntimeFixture(payload, statusCode = 200) {
+  const server = createServer((request, response) => {
+    if (request.method === "GET" && request.url === "/api/services") {
+      response.statusCode = statusCode;
+      response.setHeader("content-type", "application/json; charset=utf-8");
+      response.end(JSON.stringify(payload));
+      return;
+    }
+
+    response.statusCode = 404;
+    response.end("not found");
+  });
+
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+
+  return {
+    url: `http://127.0.0.1:${address.port}`,
+    async close() {
+      server.close();
+      await once(server, "close");
+    },
   };
 }
 
@@ -84,6 +112,8 @@ test("web host serves shell, host status, and mounted admin assets", async () =>
       assert.equal(shellResponse.status, 200);
       const shellHtml = await shellResponse.text();
       assert.match(shellHtml, /Browser-first shell for Service Lasso/);
+      assert.match(shellHtml, /Host-owned service widget/);
+      assert.match(shellHtml, /\/api\/runtime-services/);
       assert.match(shellHtml, /<iframe title="Service Admin" src="\/admin\/"><\/iframe>/);
 
       const statusResponse = await fetch(`${baseUrl}/api/host-status`);
@@ -105,6 +135,53 @@ test("web host serves shell, host status, and mounted admin assets", async () =>
       await once(server, "close");
     }
   } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("web host proxies runtime services for the host-owned widget", async () => {
+  const fixture = await createFixtureRoots();
+  const runtime = await startRuntimeFixture({
+    services: [
+      {
+        id: "echo-service",
+        name: "Echo Service",
+        lifecycle: { installed: true, configured: true, running: false },
+        health: { type: "process", healthy: true, detail: "Process is ready." },
+      },
+    ],
+  });
+
+  try {
+    const config = await validateWebConfig(
+      resolveWebConfig({
+        repoRoot: path.join(fixture.root, "service-lasso-app-web"),
+        siblingRoot: fixture.siblingRoot,
+        hostPort: 0,
+        runtimePort: Number(new URL(runtime.url).port),
+      }),
+    );
+    const server = createWebHostServer(config);
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+
+    const address = server.address();
+    assert.ok(address && typeof address !== "string");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    try {
+      const servicesResponse = await fetch(`${baseUrl}/api/runtime-services`);
+      assert.equal(servicesResponse.status, 200);
+      const servicesBody = await servicesResponse.json();
+      assert.equal(servicesBody.services.length, 1);
+      assert.equal(servicesBody.services[0].id, "echo-service");
+      assert.equal(servicesBody.services[0].health.healthy, true);
+    } finally {
+      server.close();
+      await once(server, "close");
+    }
+  } finally {
+    await runtime.close();
     await rm(fixture.root, { recursive: true, force: true });
   }
 });
