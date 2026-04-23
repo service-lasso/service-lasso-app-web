@@ -95,6 +95,7 @@ The release now proves:
 - the repo owns explicit tracked service metadata under `services/`
 - the browser-first host can be packaged repeatably
 - the runnable artifact can boot Service Lasso and Service Admin without sibling-repo checkout tricks
+- the host shell includes a bounded service listing widget backed by the runtime API
 - Echo Service acquisition now depends on manifest-owned archive metadata instead of a generated local wrapper
 - bootstrap-download mode installs the service payload before first use
 - preloaded mode installs from an already-shipped archive without a first-run download
