@@ -5,7 +5,7 @@ This repo now ships three bounded release artifacts.
 Each artifact has a different job:
 - source template
 - runnable bootstrap-download bundle
-- runnable preloaded bundle
+- runnable bundled artifact
 
 ## Source template
 
@@ -60,15 +60,15 @@ How it works:
 - the app repo owns `services/echo-service/service.json`
 - that manifest carries the bounded `artifact` block pointing at the Echo Service release assets
 - on `install`, Service Lasso downloads and unpacks the matching archive from the manifest metadata
-- the app artifact itself does not ship the Echo Service archive preloaded
+- the app artifact itself does not ship the Echo Service archive
 
 Honest label:
 - **runnable bootstrap-download bundle**
 
-## Runnable preloaded bundle
+## Runnable bundled artifact
 
 Artifact:
-- `service-lasso-app-web-<version>-preloaded.tar.gz`
+- `service-lasso-app-web-<version>-bundled.tar.gz`
 
 Purpose:
 - provide a ready-to-run browser-first host with the core runtime already installed
@@ -78,16 +78,16 @@ Purpose:
 
 What ships:
 - everything in the runnable bootstrap-download bundle
-- preseeded Echo Service archive under:
-  - `.workspace/services/echo-service/.state/artifacts/<releaseTag>/<assetName>`
+- acquired Echo Service archive under:
+  - `services/echo-service/.state/artifacts/<releaseTag>/<assetName>`
 
 How it works:
 - the app repo still owns the same canonical `services/echo-service/service.json`
-- the preloaded artifact seeds the matching archive into the runtime-owned service state before first use
+- the release package step acquires the matching archive into the repo-owned service folder before publishing
 - on `install`, Service Lasso reuses that archive and skips the network fetch
 
 Honest label:
-- **runnable preloaded bundle**
+- **runnable bundled artifact**
 
 ## What the release proves
 
@@ -98,7 +98,7 @@ The release now proves:
 - the host shell includes a bounded service listing widget backed by the runtime API
 - Echo Service acquisition now depends on manifest-owned archive metadata instead of a generated local wrapper
 - bootstrap-download mode installs the service payload before first use
-- preloaded mode installs from an already-shipped archive without a first-run download
+- bundled mode installs from an already-shipped service archive without a first-run download
 - GitHub Actions can upload the artifacts and attach them to a timestamped `yyyy.m.d-<shortsha>` release on `main`
 
 ## Public package note
@@ -138,4 +138,4 @@ Example:
 
 Any application using Service Lasso should keep a tracked `services/` folder in its repo with the service metadata it intends to manage.
 
-This app-web starter now uses that tracked inventory directly for bootstrap-download and preloaded behavior.
+This app-web starter now uses that tracked inventory directly for bootstrap-download and bundled behavior.
