@@ -34,7 +34,7 @@ Current local URLs:
 
 ## Current release artifact
 
-This starter repo now has bounded source, bootstrap-download, and preloaded/no-download release artifacts.
+This starter repo now has bounded source, bootstrap-download, and bundled/no-download release artifacts.
 
 Current local commands:
 - `npm test`
@@ -53,7 +53,7 @@ Current shipped artifact contents are documented in:
 - `docs/release-artifact.md`
 
 Current honest label:
-- this repo ships a runnable browser-first app-host starter plus explicit source, bootstrap-download, and preloaded runtime bundles
+- this repo ships a runnable browser-first app-host starter plus explicit source, bootstrap-download, and bundled runtime artifacts
 
 ## Minimal POC
 
